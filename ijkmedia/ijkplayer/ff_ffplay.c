@@ -3586,6 +3586,10 @@ static int read_thread(void *arg)
                 av_q2d(ic->streams[pkt->stream_index]->time_base) -
                 (double)(ffp->start_time != AV_NOPTS_VALUE ? ffp->start_time : 0) / 1000000
                 <= ((double)ffp->duration / 1000000);
+        ffp->is->buffer_time_max=21;
+        if (is->realtime && pkt->stream_index == is->audio_stream&&ffp->stat.audio_cache.duration > ffp->is->buffer_time_max) {
+            pkt_in_play_range = 0;               
+        } 
         if (pkt->stream_index == is->audio_stream && pkt_in_play_range) {
             packet_queue_put(&is->audioq, pkt);
         } else if (pkt->stream_index == is->video_stream && pkt_in_play_range
