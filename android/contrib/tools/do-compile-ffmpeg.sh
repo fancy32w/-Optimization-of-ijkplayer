@@ -40,7 +40,7 @@ fi
 
 
 FF_BUILD_ROOT=`pwd`
-FF_ANDROID_PLATFORM=android-9
+FF_ANDROID_API=19
 
 
 FF_BUILD_NAME=
@@ -57,7 +57,7 @@ FF_CFG_FLAGS=
 FF_EXTRA_CFLAGS=
 FF_EXTRA_LDFLAGS=
 FF_DEP_LIBS=
-
+FF_CLANG_PREFIX=
 FF_MODULE_DIRS="compat libavcodec libavfilter libavformat libavutil libswresample libswscale"
 FF_ASSEMBLER_SUB_DIRS=
 
@@ -81,18 +81,18 @@ if [ "$FF_ARCH" = "armv7a" ]; then
     FF_BUILD_NAME_LIBSOXR=libsoxr-armv7a
     FF_SOURCE=$FF_BUILD_ROOT/$FF_BUILD_NAME
 
+    FF_CLANG_PREFIX=armv7a-linux-androideabi$FF_ANDROID_API
     FF_CROSS_PREFIX=arm-linux-androideabi
     FF_TOOLCHAIN_NAME=${FF_CROSS_PREFIX}-${FF_GCC_VER}
 
     FF_CFG_FLAGS="$FF_CFG_FLAGS --arch=arm --cpu=cortex-a8"
-    FF_CFG_FLAGS="$FF_CFG_FLAGS --enable-neon"
+    FF_CFG_FLAGS="$FF_CFG_FLAGS --disable-neon"
     FF_CFG_FLAGS="$FF_CFG_FLAGS --enable-thumb"
-
     FF_EXTRA_CFLAGS="$FF_EXTRA_CFLAGS -march=armv7-a -mcpu=cortex-a8 -mfpu=vfpv3-d16 -mfloat-abi=softfp -mthumb"
     FF_EXTRA_LDFLAGS="$FF_EXTRA_LDFLAGS -Wl,--fix-cortex-a8"
 
     FF_ASSEMBLER_SUB_DIRS="arm"
-
+   
 elif [ "$FF_ARCH" = "armv5" ]; then
     FF_BUILD_NAME=ffmpeg-armv5
     FF_BUILD_NAME_OPENSSL=openssl-armv5
@@ -115,10 +115,11 @@ elif [ "$FF_ARCH" = "x86" ]; then
     FF_BUILD_NAME_LIBSOXR=libsoxr-x86
     FF_SOURCE=$FF_BUILD_ROOT/$FF_BUILD_NAME
 
+    FF_CLANG_PREFIX=i686-linux-android$FF_ANDROID_API
     FF_CROSS_PREFIX=i686-linux-android
     FF_TOOLCHAIN_NAME=x86-${FF_GCC_VER}
 
-    FF_CFG_FLAGS="$FF_CFG_FLAGS --arch=x86 --cpu=i686 --enable-yasm"
+    FF_CFG_FLAGS="$FF_CFG_FLAGS --arch=x86 --cpu=i686 --enable-x86asm"
 
     FF_EXTRA_CFLAGS="$FF_EXTRA_CFLAGS -march=atom -msse3 -ffast-math -mfpmath=sse"
     FF_EXTRA_LDFLAGS="$FF_EXTRA_LDFLAGS"
@@ -126,17 +127,18 @@ elif [ "$FF_ARCH" = "x86" ]; then
     FF_ASSEMBLER_SUB_DIRS="x86"
 
 elif [ "$FF_ARCH" = "x86_64" ]; then
-    FF_ANDROID_PLATFORM=android-21
+    FF_ANDROID_API=21
 
     FF_BUILD_NAME=ffmpeg-x86_64
     FF_BUILD_NAME_OPENSSL=openssl-x86_64
     FF_BUILD_NAME_LIBSOXR=libsoxr-x86_64
     FF_SOURCE=$FF_BUILD_ROOT/$FF_BUILD_NAME
 
+    FF_CLANG_PREFIX=x86_64-linux-android$FF_ANDROID_API
     FF_CROSS_PREFIX=x86_64-linux-android
     FF_TOOLCHAIN_NAME=${FF_CROSS_PREFIX}-${FF_GCC_64_VER}
 
-    FF_CFG_FLAGS="$FF_CFG_FLAGS --arch=x86_64 --enable-yasm"
+    FF_CFG_FLAGS="$FF_CFG_FLAGS --arch=x86_64 --enable-x86asm"
 
     FF_EXTRA_CFLAGS="$FF_EXTRA_CFLAGS"
     FF_EXTRA_LDFLAGS="$FF_EXTRA_LDFLAGS"
@@ -144,17 +146,18 @@ elif [ "$FF_ARCH" = "x86_64" ]; then
     FF_ASSEMBLER_SUB_DIRS="x86"
 
 elif [ "$FF_ARCH" = "arm64" ]; then
-    FF_ANDROID_PLATFORM=android-21
+    FF_ANDROID_API=21
 
     FF_BUILD_NAME=ffmpeg-arm64
     FF_BUILD_NAME_OPENSSL=openssl-arm64
     FF_BUILD_NAME_LIBSOXR=libsoxr-arm64
     FF_SOURCE=$FF_BUILD_ROOT/$FF_BUILD_NAME
 
+    FF_CLANG_PREFIX=aarch64-linux-android$FF_ANDROID_API
     FF_CROSS_PREFIX=aarch64-linux-android
     FF_TOOLCHAIN_NAME=${FF_CROSS_PREFIX}-${FF_GCC_64_VER}
 
-    FF_CFG_FLAGS="$FF_CFG_FLAGS --arch=aarch64 --enable-yasm"
+    FF_CFG_FLAGS="$FF_CFG_FLAGS --arch=arm64 --enable-yasm"
 
     FF_EXTRA_CFLAGS="$FF_EXTRA_CFLAGS"
     FF_EXTRA_LDFLAGS="$FF_EXTRA_LDFLAGS"
@@ -175,8 +178,9 @@ if [ ! -d $FF_SOURCE ]; then
     exit 1
 fi
 
-FF_TOOLCHAIN_PATH=$FF_BUILD_ROOT/build/$FF_BUILD_NAME/toolchain
-FF_MAKE_TOOLCHAIN_FLAGS="$FF_MAKE_TOOLCHAIN_FLAGS --install-dir=$FF_TOOLCHAIN_PATH"
+FF_TOOLCHAIN_PATH=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64
+# FF_TOOLCHAIN_PATH=$FF_BUILD_ROOT/build/$FF_BUILD_NAME/toolchain
+# FF_MAKE_TOOLCHAIN_FLAGS="$FF_MAKE_TOOLCHAIN_FLAGS --install-dir=$FF_TOOLCHAIN_PATH"
 
 FF_SYSROOT=$FF_TOOLCHAIN_PATH/sysroot
 FF_PREFIX=$FF_BUILD_ROOT/build/$FF_BUILD_NAME/output
@@ -197,14 +201,14 @@ mkdir -p $FF_PREFIX
 # mkdir -p $FF_SYSROOT
 
 
-FF_TOOLCHAIN_TOUCH="$FF_TOOLCHAIN_PATH/touch"
-if [ ! -f "$FF_TOOLCHAIN_TOUCH" ]; then
-    $ANDROID_NDK/build/tools/make-standalone-toolchain.sh \
-        $FF_MAKE_TOOLCHAIN_FLAGS \
-        --platform=$FF_ANDROID_PLATFORM \
-        --toolchain=$FF_TOOLCHAIN_NAME
-    touch $FF_TOOLCHAIN_TOUCH;
-fi
+# FF_TOOLCHAIN_TOUCH="$FF_TOOLCHAIN_PATH/touch"
+# if [ ! -f "$FF_TOOLCHAIN_TOUCH" ]; then
+#     $ANDROID_NDK/build/tools/make-standalone-toolchain.sh \
+#         $FF_MAKE_TOOLCHAIN_FLAGS \
+#         --platform=$FF_ANDROID_PLATFORM \
+#         --toolchain=$FF_TOOLCHAIN_NAME
+#     touch $FF_TOOLCHAIN_TOUCH;
+# fi
 
 
 #--------------------
@@ -212,19 +216,22 @@ echo ""
 echo "--------------------"
 echo "[*] check ffmpeg env"
 echo "--------------------"
-export PATH=$FF_TOOLCHAIN_PATH/bin/:$PATH
+export PATH=$FF_TOOLCHAIN_PATH/bin:$PATH
 #export CC="ccache ${FF_CROSS_PREFIX}-gcc"
-export CC="${FF_CROSS_PREFIX}-gcc"
+# export CC="${FF_CROSS_PREFIX}-gcc"
+export CC=$FF_TOOLCHAIN_PATH/bin/$FF_CLANG_PREFIX-clang
+export SYSROOT=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+export CXX=$FF_TOOLCHAIN_PATH/bin/$FF_CLANG_PREFIX-clang++
 export LD=${FF_CROSS_PREFIX}-ld
 export AR=${FF_CROSS_PREFIX}-ar
 export STRIP=${FF_CROSS_PREFIX}-strip
 
-FF_CFLAGS="-O3 -Wall -pipe \
-    -std=c99 \
+FF_CFLAGS="-Os -Wall -pipe \
+    -std=c17 \
     -ffast-math \
     -fstrict-aliasing -Werror=strict-aliasing \
-    -Wno-psabi -Wa,--noexecstack \
-    -DANDROID -DNDEBUG"
+    -Wa,--noexecstack \
+    -DANDROID -DNDEBUG -fPIC"
 
 # cause av_strlcpy crash with gcc4.7, gcc4.8
 # -fmodulo-sched -fmodulo-sched-allow-regmoves
@@ -267,11 +274,13 @@ FF_CFG_FLAGS="$FF_CFG_FLAGS --prefix=$FF_PREFIX"
 # Advanced options (experts only):
 FF_CFG_FLAGS="$FF_CFG_FLAGS --cross-prefix=${FF_CROSS_PREFIX}-"
 FF_CFG_FLAGS="$FF_CFG_FLAGS --enable-cross-compile"
-FF_CFG_FLAGS="$FF_CFG_FLAGS --target-os=linux"
+FF_CFG_FLAGS="$FF_CFG_FLAGS --target-os=android"
 FF_CFG_FLAGS="$FF_CFG_FLAGS --enable-pic"
 # FF_CFG_FLAGS="$FF_CFG_FLAGS --disable-symver"
 
 if [ "$FF_ARCH" = "x86" ]; then
+    FF_CFG_FLAGS="$FF_CFG_FLAGS --disable-asm"
+elif [ "$FF_ARCH" = "x86_64" ];then
     FF_CFG_FLAGS="$FF_CFG_FLAGS --disable-asm"
 else
     # Optimization options (experts only):
@@ -303,6 +312,8 @@ if [ -f "./config.h" ]; then
 else
     which $CC
     ./configure $FF_CFG_FLAGS \
+        --cc=$CC \
+        --cxx=$CXX \
         --extra-cflags="$FF_CFLAGS $FF_EXTRA_CFLAGS" \
         --extra-ldflags="$FF_DEP_LIBS $FF_EXTRA_LDFLAGS"
     make clean
