@@ -1285,15 +1285,16 @@ static double compute_target_delay(FFPlayer *ffp, double delay, VideoState *is)
 }
 
 static double vp_duration(VideoState *is, Frame *vp, Frame *nextvp) {
-    if (vp->serial == nextvp->serial) {
-        double duration = nextvp->pts - vp->pts;
-        if (isnan(duration) || duration <= 0 || duration > is->max_frame_duration)
-            return vp->duration;
-        else
-            return duration;
-    } else {
-        return 0.0;
-    }
+    // if (vp->serial == nextvp->serial) {
+    //     double duration = nextvp->pts - vp->pts;
+    //     if (isnan(duration) || duration <= 0 || duration > is->max_frame_duration)
+    //         return vp->duration;
+    //     else
+    //         return duration;
+    // } else {
+    //     return 0.0;
+    // }
+    return vp->duration;
 }
 
 static void update_video_pts(VideoState *is, double pts, int64_t pos, int serial) {
