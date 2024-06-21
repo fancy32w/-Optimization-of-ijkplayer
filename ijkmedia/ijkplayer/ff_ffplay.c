@@ -2182,7 +2182,7 @@ static int ffplay_video_thread(void *arg)
     double duration;
     int ret;
     AVRational tb = is->video_st->time_base;
-    AVRational frame_rate = av_guess_frame_rate(is->ic, is->video_st, NULL);
+    // AVRational frame_rate = av_guess_frame_rate(is->ic, is->video_st, NULL);
     int64_t dst_pts = -1;
     int64_t last_dst_pts = -1;
     int retry_convert_image = 0;
@@ -2292,7 +2292,7 @@ static int ffplay_video_thread(void *arg)
             last_format = frame->format;
             last_serial = is->viddec.pkt_serial;
             last_vfilter_idx = is->vfilter_idx;
-            frame_rate = av_buffersink_get_frame_rate(filt_out);
+            // frame_rate = av_buffersink_get_frame_rate(filt_out);
             SDL_UnlockMutex(ffp->vf_mutex);
         }
 
@@ -2316,7 +2316,8 @@ static int ffplay_video_thread(void *arg)
                 is->frame_last_filter_delay = 0;
             tb = av_buffersink_get_time_base(filt_out);
 #endif
-            duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
+            // duration = (frame_rate.num && frame_rate.den ? av_q2d((AVRational){frame_rate.den, frame_rate.num}) : 0);
+            duration = 0.01;
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
             ret = queue_picture(ffp, frame, pts, duration, frame->pkt_pos, is->viddec.pkt_serial);
             av_frame_unref(frame);
@@ -2803,7 +2804,24 @@ static int audio_open(FFPlayer *opaque, int64_t wanted_channel_layout, int wante
     SDL_AoutSetDefaultLatencySeconds(ffp->aout, ((double)(2 * spec.size)) / audio_hw_params->bytes_per_sec);
     return spec.size;
 }
-
+void print_avctx_info(const AVCodecContext *avctx)
+{
+    av_log(NULL, AV_LOG_INFO, "Codec Context Information:\n");
+    av_log(NULL, AV_LOG_INFO, "  Codec ID: %d\n", avctx->codec_id);
+    av_log(NULL, AV_LOG_INFO, "  Codec Type: %d\n", avctx->codec_type);
+    av_log(NULL, AV_LOG_INFO, "  Bit Rate: %" PRId64 "\n", avctx->bit_rate);
+    av_log(NULL, AV_LOG_INFO, "  Width: %d\n", avctx->width);
+    av_log(NULL, AV_LOG_INFO, "  Height: %d\n", avctx->height);
+    av_log(NULL, AV_LOG_INFO, "  Sample Rate: %d\n", avctx->sample_rate);
+    av_log(NULL, AV_LOG_INFO, "  Channels: %d\n", avctx->channels);
+    av_log(NULL, AV_LOG_INFO, "  Channel Layout: %" PRId64 "\n", avctx->channel_layout);
+    av_log(NULL, AV_LOG_INFO, "  Frame Size: %d\n", avctx->frame_size);
+    av_log(NULL, AV_LOG_INFO, "  Pixel Format: %d\n", avctx->pix_fmt);
+    av_log(NULL, AV_LOG_INFO, "  Sample Format: %d\n", avctx->sample_fmt);
+    av_log(NULL, AV_LOG_INFO, "  Time Base: %d/%d\n", avctx->time_base.num, avctx->time_base.den);
+    av_log(NULL, AV_LOG_INFO, "  Max B Frames: %d\n", avctx->max_b_frames);
+    av_log(NULL, AV_LOG_INFO, "  Flags: %d\n", avctx->flags);
+}
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(FFPlayer *ffp, int stream_index)
 {
@@ -2822,6 +2840,10 @@ static int stream_component_open(FFPlayer *ffp, int stream_index)
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
     avctx = avcodec_alloc_context3(NULL);
+#if 1
+    //set decoder as low deday
+    avctx->flags |= CODEC_FLAG_LOW_DELAY;
+#endif
     if (!avctx)
         return AVERROR(ENOMEM);
 
@@ -2829,7 +2851,20 @@ static int stream_component_open(FFPlayer *ffp, int stream_index)
     if (ret < 0)
         goto fail;
     av_codec_set_pkt_timebase(avctx, ic->streams[stream_index]->time_base);
-
+    print_avctx_info(avctx);
+    if(avctx->codec_type==1&&avctx->sample_rate==0&&avctx->channels==0){
+        avctx->sample_rate=48000;
+        avctx->channels=2;
+        avctx->channel_layout=3;
+        avctx->frame_size=1024;
+        avctx->sample_fmt=8;
+        print_avctx_info(avctx);
+    }else if(avctx->codec_type==0){
+        avctx->width=0;
+        avctx->height=0;
+        avctx->pix_fmt=0;
+        print_avctx_info(avctx);
+    }
     codec = avcodec_find_decoder(avctx->codec_id);
 
     switch (avctx->codec_type) {
@@ -3269,6 +3304,8 @@ static int read_thread(void *arg)
             set_default_window_size(codecpar->width, codecpar->height, sar);
     }
 #endif
+    if(!ffp->audio_disable&&st_index[AVMEDIA_TYPE_AUDIO]<0)
+        st_index[AVMEDIA_TYPE_AUDIO] =1;
 
     /* open the streams */
     if (st_index[AVMEDIA_TYPE_AUDIO] >= 0) {
