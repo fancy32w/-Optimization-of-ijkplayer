@@ -2852,20 +2852,7 @@ static int stream_component_open(FFPlayer *ffp, int stream_index)
     if (ret < 0)
         goto fail;
     av_codec_set_pkt_timebase(avctx, ic->streams[stream_index]->time_base);
-    print_avctx_info(avctx);
-    if(avctx->codec_type==1&&avctx->sample_rate==0&&avctx->channels==0){
-        avctx->sample_rate=48000;
-        avctx->channels=2;
-        avctx->channel_layout=3;
-        avctx->frame_size=1024;
-        avctx->sample_fmt=8;
-        print_avctx_info(avctx);
-    }else if(avctx->codec_type==0){
-        avctx->width=0;
-        avctx->height=0;
-        avctx->pix_fmt=0;
-        print_avctx_info(avctx);
-    }
+
     codec = avcodec_find_decoder(avctx->codec_id);
 
     switch (avctx->codec_type) {
