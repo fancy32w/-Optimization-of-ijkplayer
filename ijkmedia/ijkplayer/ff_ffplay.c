@@ -3292,7 +3292,7 @@ static int read_thread(void *arg)
             set_default_window_size(codecpar->width, codecpar->height, sar);
     }
 #endif
-    if(!ffp->audio_disable&&st_index[AVMEDIA_TYPE_AUDIO]<0)
+    if(!ffp->audio_disable&&st_index[AVMEDIA_TYPE_AUDIO]<0&& strcmp(is->ic->iformat->name, "rtp") == 0)
         st_index[AVMEDIA_TYPE_AUDIO] =1;
 
     /* open the streams */
