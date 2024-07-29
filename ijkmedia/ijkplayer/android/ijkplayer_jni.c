@@ -254,6 +254,40 @@ LABEL_RETURN:
     return;
 }
 
+
+static void
+IjkMediaPlayer_pushVideoPacket(JNIEnv *env, jobject thiz, jbyteArray frameData, jint frameSize) {
+    MPTRACE("%s\n", __func__);
+    int retval = 0;
+    IjkMediaPlayer *mp = jni_get_media_player(env, thiz);
+    JNI_CHECK_GOTO(mp, env, "java/lang/IllegalStateException", "mpjni: pushVideoPacket: null mp", LABEL_RETURN);
+
+    jbyte *frameDataPtr = (*env)->GetByteArrayElements(env, frameData, NULL);
+    retval = ijkmp_push_video_packet(mp, (uint8_t *)frameDataPtr, frameSize);
+    (*env)->ReleaseByteArrayElements(env, frameData, frameDataPtr, JNI_ABORT);
+    IJK_CHECK_MPRET_GOTO(retval, env, LABEL_RETURN);
+
+LABEL_RETURN:
+    ijkmp_dec_ref_p(&mp);
+}
+
+static void
+IjkMediaPlayer_pushAudioPacket(JNIEnv *env, jobject thiz, jbyteArray frameData, jint frameSize) {
+    MPTRACE("%s\n", __func__);
+    int retval = 0;
+    IjkMediaPlayer *mp = jni_get_media_player(env, thiz);
+    JNI_CHECK_GOTO(mp, env, "java/lang/IllegalStateException", "mpjni: pushAudioPacket: null mp", LABEL_RETURN);
+
+    jbyte *frameDataPtr = (*env)->GetByteArrayElements(env, frameData, NULL);
+    retval = ijkmp_push_audio_packet(mp, (uint8_t *)frameDataPtr, frameSize);
+    (*env)->ReleaseByteArrayElements(env, frameData, frameDataPtr, JNI_ABORT);
+    IJK_CHECK_MPRET_GOTO(retval, env, LABEL_RETURN);
+
+LABEL_RETURN:
+    ijkmp_dec_ref_p(&mp);
+}
+
+
 static void
 IjkMediaPlayer_prepareAsync(JNIEnv *env, jobject thiz)
 {
@@ -1144,6 +1178,8 @@ static JNINativeMethod g_methods[] = {
     { "_setAndroidIOCallback",  "(Ltv/danmaku/ijk/media/player/misc/IAndroidIO;)V", (void *)IjkMediaPlayer_setAndroidIOCallback },
 
     { "_setVideoSurface",       "(Landroid/view/Surface;)V", (void *) IjkMediaPlayer_setVideoSurface },
+     { "_pushVideoPacket", "([BI)V", (void *) IjkMediaPlayer_pushVideoPacket },
+     { "_pushAudioPacket", "([BI)V", (void *) IjkMediaPlayer_pushAudioPacket },
     { "_prepareAsync",          "()V",      (void *) IjkMediaPlayer_prepareAsync },
     { "_start",                 "()V",      (void *) IjkMediaPlayer_start },
     { "_stop",                  "()V",      (void *) IjkMediaPlayer_stop },

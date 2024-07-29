@@ -3667,6 +3667,53 @@ static int read_thread(void *arg)
 }
 
 static int video_refresh_thread(void *arg);
+//----------------------------------------------------------
+int ffp_push_video_packet_to_queue(FFPlayer *ffp, uint8_t *frame_data, int frame_size) {
+    if (!ffp || !frame_data || frame_size <= 0) {
+        return -1;
+    }
+    av_init_packet(&pkt);
+    pkt.data = av_malloc(frame_size);
+    if (!pkt.data) {
+        return -1;
+    }
+    memcpy(pkt.data, frame_data, frame_size);
+    pkt.size = frame_size;
+    if (ffp->is) {
+        packet_queue_put(&ffp->is->videoq, &pkt);
+        ffp_statistic_l(ffp);
+    } else {
+        av_free(pkt.data);
+        return -1;
+    }
+    return 0;
+}
+
+int ffp_push_audio_packet_to_queue(FFPlayer *ffp, uint8_t *frame_data, int frame_size) {
+    if (!ffp || !frame_data || frame_size <= 0) {
+        return -1;
+    }
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    pkt.data = av_malloc(frame_size);
+    if (!pkt.data) {
+        return -1;
+    }
+    memcpy(pkt.data, frame_data, frame_size);
+    pkt.size = frame_size;
+    if (ffp->is) {
+        packet_queue_put(&ffp->is->audioq, &pkt);
+        ffp_statistic_l(ffp);
+
+    } else {
+        av_free(pkt.data);
+        return -1;
+    }
+
+    return 0;
+}
+
+//----------------------------------------
 static VideoState *stream_open(FFPlayer *ffp, const char *filename, AVInputFormat *iformat)
 {
     assert(!ffp->is);
@@ -3795,6 +3842,7 @@ static int video_refresh_thread(void *arg)
         if (remaining_time > 0.0)
             av_usleep((int)(int64_t)(remaining_time * 1000000.0));
         remaining_time = REFRESH_RATE;
+        //  if(is->videoq.nb_packets>0) is->paused=0;
         if (is->show_mode != SHOW_MODE_NONE && (!is->paused || is->force_refresh))
             video_refresh(ffp, &remaining_time);
     }

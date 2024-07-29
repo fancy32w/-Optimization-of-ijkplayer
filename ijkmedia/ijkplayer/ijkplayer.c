@@ -383,6 +383,26 @@ static int ijkmp_msg_loop(void *arg)
     return ret;
 }
 
+int ijkmp_push_video_packet(IjkMediaPlayer *mp, uint8_t *frame_data, int frame_size) {
+    assert(mp);
+    MPTRACE("ijkmp_push_video_packet()\n");
+    pthread_mutex_lock(&mp->mutex);
+    int retval = ffp_push_video_packet_to_queue(mp->ffplayer, frame_data, frame_size);
+    pthread_mutex_unlock(&mp->mutex);
+    MPTRACE("ijkmp_push_video_packet()=%d\n", retval);
+    return retval;
+}
+
+
+int ijkmp_push_audio_packet(IjkMediaPlayer *mp, uint8_t *frame_data, int frame_size) {
+    assert(mp);
+    MPTRACE("ijkmp_push_audio_packet()\n");
+    pthread_mutex_lock(&mp->mutex);
+    int retval = ffp_push_audio_packet_to_queue(mp->ffplayer, frame_data, frame_size);
+    pthread_mutex_unlock(&mp->mutex);
+    MPTRACE("ijkmp_push_audio_packet=%d\n", retval);
+    return retval;
+}
 static int ijkmp_prepare_async_l(IjkMediaPlayer *mp)
 {
     assert(mp);
