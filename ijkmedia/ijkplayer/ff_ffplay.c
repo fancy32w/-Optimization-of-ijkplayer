@@ -3672,6 +3672,7 @@ int ffp_push_video_packet_to_queue(FFPlayer *ffp, uint8_t *frame_data, int frame
     if (!ffp || !frame_data || frame_size <= 0) {
         return -1;
     }
+    AVPacket pkt;
     av_init_packet(&pkt);
     pkt.data = av_malloc(frame_size);
     if (!pkt.data) {
