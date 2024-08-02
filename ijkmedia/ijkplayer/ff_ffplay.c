@@ -1250,9 +1250,11 @@ static void step_to_next_frame_l(FFPlayer *ffp)
 static double compute_target_delay(FFPlayer *ffp, double delay, VideoState *is)
 {
     double sync_threshold, diff = 0;
-
+    if(strncmp(is->filename, "ijkio:androidio:",strlen("ijkio:androidio:")) == 0){
+    av_log(NULL, AV_LOG_DEBUG, "ijkio:androidio: delay");
+    }
     /* update delay to follow master synchronisation source */
-    if (get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER) {
+    else if (get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER) {
         /* if video is slave, we try to correct big delays by
            duplicating or deleting a frame */
         diff = get_clock(&is->vidclk) - get_master_clock(is);
@@ -2969,6 +2971,16 @@ static int stream_component_open(FFPlayer *ffp, int stream_index)
     case AVMEDIA_TYPE_VIDEO:
         is->video_stream = stream_index;
         is->video_st = ic->streams[stream_index];
+        
+        
+        if(strncmp(is->filename, "ijkio:androidio:",strlen("ijkio:androidio:")) == 0){
+            // nal_size的值为extradata第五字节的后两位
+            uint8_t fifth_byte = avctx->extradata[4];  
+            // 将nal_size修改为0
+            fifth_byte &= 0xFC;  
+            avctx->extradata[4] = fifth_byte;       
+        }
+       
 
         if (ffp->async_init_decoder) {
             while (!is->initialized_decoder) {
