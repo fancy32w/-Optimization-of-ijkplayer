@@ -287,6 +287,52 @@ LABEL_RETURN:
     ijkmp_dec_ref_p(&mp);
 }
 
+static void
+IjkMediaPlayer_setAudioCodec(JNIEnv *env, jobject thiz, jstring name) {
+    MPTRACE("%s\n", __func__);
+    IjkMediaPlayer *mp = jni_get_media_player(env, thiz);
+    const char *c_name = NULL;
+    JNI_CHECK_GOTO(mp, env, "java/lang/IllegalStateException", "mpjni: setAudioCodec: null mp", LABEL_RETURN);
+
+    if (!name) {
+        goto LABEL_RETURN;
+    }
+
+    c_name = (*env)->GetStringUTFChars(env, name, NULL );
+    JNI_CHECK_GOTO(c_name, env, "java/lang/OutOfMemoryError", "mpjni: setAudioCodec: name.string oom", LABEL_RETURN);
+    JNI_CHECK_GOTO(mp, env, NULL, "mpjni: IjkMediaPlayer_setAudioCodec: null name", LABEL_RETURN);
+
+    ijkmp_set_audio_codec(mp, c_name);
+
+LABEL_RETURN:
+    if (c_name)
+        (*env)->ReleaseStringUTFChars(env, name, c_name);
+    ijkmp_dec_ref_p(&mp);
+}
+
+static void
+IjkMediaPlayer_setVideoCodec(JNIEnv *env, jobject thiz, jstring name) {
+    MPTRACE("%s\n", __func__);
+    IjkMediaPlayer *mp = jni_get_media_player(env, thiz);
+    const char *c_name = NULL;
+    JNI_CHECK_GOTO(mp, env, "java/lang/IllegalStateException", "mpjni: setVideoCodec: null mp", LABEL_RETURN);
+
+    if (!name) {
+        goto LABEL_RETURN;
+    }
+
+    c_name = (*env)->GetStringUTFChars(env, name, NULL );
+    JNI_CHECK_GOTO(c_name, env, "java/lang/OutOfMemoryError", "mpjni: setVideoCodec: name.string oom", LABEL_RETURN);
+    JNI_CHECK_GOTO(mp, env, NULL, "mpjni: IjkMediaPlayer_setVideooCodec: null name", LABEL_RETURN);
+
+    ijkmp_set_video_codec(mp, c_name);
+
+LABEL_RETURN:
+    if (c_name)
+        (*env)->ReleaseStringUTFChars(env, name, c_name);
+    ijkmp_dec_ref_p(&mp);
+}
+
 
 static void
 IjkMediaPlayer_prepareAsync(JNIEnv *env, jobject thiz)
@@ -1180,6 +1226,8 @@ static JNINativeMethod g_methods[] = {
     { "_setVideoSurface",       "(Landroid/view/Surface;)V", (void *) IjkMediaPlayer_setVideoSurface },
      { "_pushVideoPacket", "([BI)V", (void *) IjkMediaPlayer_pushVideoPacket },
      { "_pushAudioPacket", "([BI)V", (void *) IjkMediaPlayer_pushAudioPacket },
+     { "_setAudioCodec", "(Ljava/lang/String;)V", (void *) IjkMediaPlayer_setAudioCodec },
+     { "_setVideoCodec", "(Ljava/lang/String;)V", (void *) IjkMediaPlayer_setVideoCodec },
     { "_prepareAsync",          "()V",      (void *) IjkMediaPlayer_prepareAsync },
     { "_start",                 "()V",      (void *) IjkMediaPlayer_start },
     { "_stop",                  "()V",      (void *) IjkMediaPlayer_stop },

@@ -2828,6 +2828,24 @@ void print_avctx_info(const AVCodecContext *avctx)
     av_log(NULL, AV_LOG_INFO, "  Max B Frames: %d\n", avctx->max_b_frames);
     av_log(NULL, AV_LOG_INFO, "  Flags: %d\n", avctx->flags);
 }
+
+
+void ffp_set_audio_codec_name(FFPlayer *ffp, const char *name)
+
+{
+    if (!ffp)
+        return;
+  
+    ffp->audio_codec_name=strdup(name);
+}
+void ffp_set_video_codec_name(FFPlayer *ffp, const char *name)
+{
+    if (!ffp)
+        return;
+    
+    ffp->video_codec_name=strdup(name);
+
+}
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(FFPlayer *ffp, int stream_index)
 {

@@ -403,6 +403,29 @@ int ijkmp_push_audio_packet(IjkMediaPlayer *mp, uint8_t *frame_data, int frame_s
     MPTRACE("ijkmp_push_audio_packet=%d\n", retval);
     return retval;
 }
+void ijkmp_set_audio_codec(IjkMediaPlayer *mp, const char *name)
+{
+    assert(mp);
+
+
+    pthread_mutex_lock(&mp->mutex);
+    ffp_set_audio_codec_name(mp->ffplayer,  name);
+    pthread_mutex_unlock(&mp->mutex);
+
+}
+
+void ijkmp_set_video_codec(IjkMediaPlayer *mp, const char *name)
+{
+    assert(mp);
+
+
+    pthread_mutex_lock(&mp->mutex);
+    ffp_set_video_codec_name(mp->ffplayer,  name);
+    pthread_mutex_unlock(&mp->mutex);
+
+}
+
+
 static int ijkmp_prepare_async_l(IjkMediaPlayer *mp)
 {
     assert(mp);
